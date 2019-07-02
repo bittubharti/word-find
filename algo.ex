@@ -25,28 +25,94 @@ defmodule Algo do
   2282668687 should return the following list [["act", "contour"], ["acta", "mounts"], ["bat", "amounts"], ["bat", "contour"], ["cat", "contour"], "catamounts"]
   """
 
-  def first_attempt(%{
-    :iterable => ""
-  }), do: IO.inspect({:DONE})
+  def attempt(%{:iterable => "", :found => found}), do: IO.inspect({:FOUND, found}) 
 
-  def first_attempt(%{
+  def attempt(%{
     :actual => actual,
     :iterable => iterable,
-    :found => nil 
+    :found => found 
   } = foo) do
-  
-    case (
-      (dictionary |> map_words) 
-      |> Enum.find(& (&1 |> IO.inspect(label: :FIRST)  == iterable |> String.graphemes |> IO.inspect(label: :FIRST))))  do
-  
-      nil -> foo |> Map.merge(%{:iterable => iterable |> String.slice(0..1)}) |> first_attempt
 
-      f -> IO.inspect({:FOUND, f})
+    case iterable |> find_word do
+      nil -> 
+        foo 
+        |> slice_iterable
+        |> attempt
+  
+      f -> 
+        all_founds = found ++ (f |> handle_found)
+        flen = f |> length
+
+        case flen < actual |> String.length do
+          true ->
+
+            new_actual = 
+              actual |> String.slice(0..flen) 
+
+
+            foo
+            |> Map.merge(%{
+              :iterable => new_actual,
+              :actual => new_actual,
+              :found => all_founds
+            })  
+            |> attempt
+
+          false ->
+            foo
+            |> slice_iterable 
+            |> Map.merge(%{
+              :found => all_founds
+            })
+            |> attempt
+        end
+    end    
+  end
+
+  def handle_found(found) do
+    
+    found
+    |> find_original_word
+  end
+
+  def slice_iterable(%{:iterable => iterable} = map),
+      do: map |> Map.merge(%{:iterable => iterable |> slice_word})
+  
+  def slice_word(word) do
+    case word |> String.graphemes do
+      [ _ | rest ] ->
+        rest 
+        |> Enum.reduce("", fn r, acc -> acc <> r end)
+      _ ->
+        ""
     end
   end
-  
+
+  def find_word(word),
+      do: dictionary |> map_words |> Enum.find(& (&1 == word |> String.graphemes))
+
+  def find_original_word(mapped_word),
+  do: dictionary
+      |> map_words_with_dict
+      |> Enum.reduce([], fn {mapped, actual}, acc ->
+        mapped = mapped |> List.flatten
+        case mapped == mapped_word do
+          true -> acc ++ [actual]
+          _ -> acc
+        end
+      end)
+
+  def map_words_with_dict(words),
+  do: words
+      |> Enum.reduce(%{}, fn word, acc ->
+        acc
+        |> Map.merge(%{
+          map_words(word |> String.graphemes) => word
+        })
+      end)
+
   def map_words(words),
-    do: words |> Enum.map(& map_word(&1))
+  do: words |> Enum.map(& map_word(&1))
 
   def map_word(word),
   do: word
@@ -75,43 +141,50 @@ defmodule Algo do
       9 => ["w", "x", "y", "z"]
     }
 
-  def dictionary,
+  def dict_testing,
     do: [
-  "ZEBU",
-  "ABU",
-  "ANDY",
-  "WWALTER",
-  "JAMES",
-  "ROB",
-  "ERIC",
-  "TOM",
-  "BROCK",
-  "OBAMA",
-  "TRUMP",
-  "HILTON",
-  "CLINTON",
-  "ZENDAYA",
-  "TIMBERLAKE",
-  "SENORITA",
-  "HIPPY",
-  "TUPAC",
-  "LILJIMMY",
-  "FOO",
-  "BAR",
-  "SHIRT",
-  "SHORTY",
-  "KENEDDY",
-  "ROBMYGOD"
-  ]
+    "ZEBU",
+    "ABU",
+    "ANDY",
+    "WWALTER",
+    "JAMES",
+    "ROB",
+    "ERIC",
+    "TOM",
+    "BROCK",
+    "OBAMA",
+    "TRUMP",
+    "HILTON",
+    "CLINTON",
+    "ZENDAYA",
+    "TIMBERLAKE",
+    "SENORITA",
+    "HIPPY",
+    "TUPAC",
+    "LILJIMMY",
+    "FOO",
+    "BAR",
+    "SHIRT",
+    "SHORTY",
+    "KENEDDY",
+    "ROBMYGOD"
+    ]
 
-  def log,
-    do: IO.inspect({:LOG})
+  def dictionary,
+  do: File.read!("dictionary.txt") |> String.split("\n") |> Enum.take(1000)
+
+  def test(number, expect),
+  do: Algo.attempt(%{
+    :actual => number,
+    :iterable => number,
+    :found => []
+    }) == {:FOUND, expect}
+    
 end
 
+Algo.test("22252222", ["ABBA", "ABAKA"]) |> IO.inspect(label: :RESULT_SHOULD_BE_TRUE)
+Collapse
 
-Algo.map_words(Algo.dictionary) |> IO.inspect
-Algo.first_attempt(%{
-  :actual => "9328",
-  :iterable => "9328",
-  :found => nil
-}) |> IO.inspect
+
+
+Message Input
