@@ -183,8 +183,3 @@ defmodule Algo do
 end
 
 Algo.test("22252222", ["ABBA", "ABAKA"]) |> IO.inspect(label: :RESULT_SHOULD_BE_TRUE)
-Collapse
-
-
-
-Message Input
